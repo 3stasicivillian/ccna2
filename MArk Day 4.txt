@@ -1,0 +1,461 @@
+192.168.102.11   --- UTM-PH
+192.168.102.12   --- UTM-JP
+
+User: admin
+Pass: pass
+
+
+netstat -n -p tcp
+
+
+!@NetOps-PH
+youporn.com     66.254.114.79 /24
+pornhub.com     66.254.114.41
+redtube.com     66.254.114.238
+faketaxi.com    66.254.114.234
+bangbros.com    66.254.114.234
+bangbus.com     66.254.114.234/24
+pinayflix.com   104.21.55.88
+xhamster.com    104.16.3.81
+iyottube.com    208.77.20.35
+sulasok.tv      104.16.3.81
+
+
+
+
+!@UTM-PH
+config t
+ no ip access-list standard FWP1
+ ip access-list standard FWP1
+  deny 66.254.114.79 0.0.0.255
+  deny 104.0.0.0  0.255.255.255
+  deny 208.77.20.35 0.0.0.0
+  permit any
+ int gi 1
+  ip access-group FWP1 in
+  end
+show ip access-list int g1
+
+
+
+enable domain lookup
+
+
+conf t
+ip domain lookup
+ip name-server 8.8.8.8
+end
+
+
+
+
+
+
+
+
+config t
+ no ip access-list standard FWP1
+ ip access-list standard FWP1
+  deny 66.254.114.79 0.0.0.255
+  deny 104.0.0.0  0.255.255.255
+  deny 208.77.20.35 0.0.0.0
+  permit any
+ int gi 1
+  ip access-group FWP1 in   / no ip access-group FWP1 in
+  end
+show ip access-list int g1
+
+
+
+
+
+
+
+testing fw2
+
+
+!@NetOps-PH
+ping www.dlsu.edu.ph    172.66.161.211
+ping www.ccp.edu.ph     50.6.160.47
+ping www.feu.edu.ph     184.168.125.216
+ping  www.ue.edu.ph     155.137.92.102
+ping  www.tip.edu.ph    172.66.144.4
+
+
+
+config t
+ no ip access-list standard FWP2
+ ip access-list standard FWP2
+  deny 172.66.161.211 0.0.0.0
+  deny 50.6.160.47 0.0.0.0
+  deny 184.168.125.216 0.0.0.0
+  deny 172.66.144.4 0.0.0.0
+  permit any
+ int gi 1
+  ip access-group FWP2 in
+  end
+wr
+show ip access-list int g1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!@UTM-PH
+config t
+ int g1
+  ip add 208.8.8.100 255.255.255.0 secondary
+  no shut
+  exit
+ ip host www.bet100.com 208.8.8.100
+ service finger
+ service tcp-small-servers
+ service udp-small-servers
+ ip dns server
+ ip http server
+ ip http secure-server
+ telephony-service
+  no auto-reg-ephone
+  max-ephones 5
+  max-dn 20
+  ip source-address 208.8.8.11 port 2000
+  exit
+ voice service voip
+  allow-connections h323 to sip
+          
+  allow-connections sip to h323
+  allow-connections sip to sip
+  supplementary-service h450.12
+ sip
+   bind control source-interface g1
+   bind media source-interface g1
+   registrar server expires max 600 min 60
+ voice register global
+  mode cme
+  source-address 208.8.8.11 port 5060
+  max-dn 12
+  max-pool 12
+  authenticate register
+  create profile sync syncinfo.xml
+  end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!@UTM-PH
+conf t
+ no ip access-list extended FWP4
+ ip access-list extended FWP4
+ permit tcp Any host 208.8.8.100 eq 80 log
+ permit tcp Any host 208.8.8.100 eq 443 log
+ permit icmp Any host 208.8.8.100 log
+ permit tcp Any host 208.8.8.100 eq 22 log
+ permit tcp Any host 208.8.8.100 eq 53 log
+ Int gi 1
+  ip access-group FWP4 in
+  end
+
+
+
+
+
+
+
+
+Create an access-list named FWP5 to open the following ports:  
+208.8.8.100 open only telnet, sql, domain, ftp, ping  
+
+
+
+conf t
+ no ip access-list extended FWP5
+ ip access-list extended FWP5
+ permit tcp Any host 208.8.8.100 eq 23 log
+ permit tcp Any host 208.8.8.100 eq 3306 log
+ permit tcp Any host 208.8.8.100 eq 53 log
+ permit tcp Any host 208.8.8.100 eq 21 log
+ permit icmp Any host 208.8.8.100 log
+ Int gi 1
+  ip access-group FWP5 in
+  end
+
+
+
+remove and add
+
+conf t
+ip access-list extended FWP5
+no 20 permit tcp any host 208.8.8.100 eq 3306 log
+20 permit tcp any host 208.8.8.100 eq 25 log
+end
+
+
+
+
+
+Create an access-list named FWP6 to open the following ports:  208.8.8.100 open only sccp, sip, imap, smtp, pop3, ftp, tftp, ntp
+
+
+
+
+
+conf t
+ no ip access-list extended FWP6
+ ip access-list extended FWP6
+ permit tcp Any host 208.8.8.100 eq 2000 log
+ permit tcp Any host 208.8.8.100 eq 5060 log
+ permit tcp Any host 208.8.8.100 eq 143 log
+ permit tcp Any host 208.8.8.100 eq 25 log
+ permit tcp Any host 208.8.8.100 eq 110 log
+ permit tcp Any host 208.8.8.100 eq 21 log
+ permit udp Any host 208.8.8.100 eq 69 log
+ permit udp Any host 208.8.8.100 eq 123 log
+ Int gi 1
+  ip access-group FWP6 in
+  end
+
+
+
+
+monitor session 1 source  interface fa0/3, fa0/5, fa0/7
+monitor session 1 destination  interface fa0/1, fa0/9
+end
+
+
+
+
+
+
+tcp
+---  nmap -v 208.8.8.100
+
+
+udp
+---  nmap -uS --min-rate 2000
+
+
+conf t
+ip route 10.11.11.96 225.255.255.224.208.8.8.11
+end
+ping 10.11.11.101
+
+
+
+
+
+
+
+
+
+
+
+
+pc-ph    utm-ph     utm-jp
+
+
+
+
+
+
+
+
+
+
+
+
+
+NAT
+
+1. identify INSIDE and OUTSIDE
+
+
+
+PH
+conf t
+int g1
+ip nat outside
+int g3
+ip nat inside
+end
+
+
+conf t
+ip access-list extended NAT
+permit ip 10.11.11.96 0.0.0.31 any
+end
+
+
+1:1
+UTM-PH
+conf t
+ip nat inside source static 10.11.11.101 208.8.8.72
+end
+show ip nat translation
+
+
+
+
+UTM-PH
+many:1 NAT
+
+conf t
+ip nat inside source list NAT int gig1 overload
+end
+show ip nat translation
+
+
+
+jp
+
+conf t
+int g1
+ip nat outside
+int g3
+ip nat inside
+end
+
+
+
+conf t
+ip access-list extended NAT
+permit ip 10.21.21.208 0.0.0.15 any
+end
+
+
+conf t
+ip nat inside source list NAT int gig1 overload
+end
+show ip nat translation
+
+
+ip route 0.0.0.0 0.0.0.0 208.8.8.2
+
+
+
+
+
+
+
+
+----------
+Port forwarding
+
+
+
+UTM-PH
+
+conf t
+ip nat inside source static tcp 10.11.11.101 80 208.8.8.67 8080
+ip nat inside source static tcp 10.11.11.101 443 208.8.8.67 8433
+end
+
+
+
+conf t
+ip nat inside source static tcp 10.11.11.101 22 208.8.8.67 2222
+ip nat inside source static tcp 10.11.11.101 44 208.8.8.67 4444
+end
+
+
+
+JP 10.21.21.211
+conf t
+ip nat inside source static tcp 10.21.21.211 80 208.8.8.200 8111
+ip nat inside source static tcp 10.21.21.211 443 208.8.8.200 8112
+ip nat inside source static tcp 10.21.21.211 22 208.8.8.200 2222
+end
+
+
+
+
+
+
+
+
+
+
+
+!@ Setup SSH
+UTM-PH
+conf t
+ip domain name ccna.sec
+!
+crypto key generate rsa modulus 2048 label key exportable
+ip ssh version 2
+ip ssh rsa keypair-name key
+end
+
+crypto key export rsa key pem terminal aes C1sc0123
+
+
+
+
+
+
+
+Turn off Password Auth
+!@UTM-PH
+conf t
+ip ssh server algorithm authent publickey
+no ip ssh server algorithm authent password
+no ip ssh server algorithm authent keyboard
+end
+
+
+
+
+
+
+------Network Automation
+
+Data Plane
+Control Plane
+Management Plane
+
+
+
+
+
